@@ -35,12 +35,12 @@
     return fila.stockFarmacia === 0 && fila.stockBodega > 0;
   }
 
-  function incluirEnInforme(fila) {
+  function incluirEnImpresion(fila) {
     // Este caso siempre debe aparecer, incluso cuando no se pueda calcular %
     // por no existir consumo durante el periodo.
     if (esPrioridadBodega(fila)) return true;
 
-    // Los demás productos solo se ofrecen hasta 199% de cobertura.
+    // Los demás productos solo se imprimen hasta 199% de cobertura.
     return fila.indiceCobertura !== null &&
       fila.indiceCobertura <= MAXIMO_COBERTURA_INFORME;
   }
@@ -98,9 +98,11 @@
       };
     });
 
-    // Las filas ofrecidas en el informe cumplen el límite de 199%, salvo la
-    // prioridad especial de Farmacia sin stock y Bodega con disponibilidad.
-    const filas = todasLasFilas.filter(incluirEnInforme).sort(ordenarFilas);
+    // En pantalla se muestran todos los productos. La propiedad imprimir
+    // determina cuáles permanecen visibles al usar "Imprimir informe".
+    const filas = todasLasFilas
+      .map((fila) => ({ ...fila, imprimir: incluirEnImpresion(fila) }))
+      .sort(ordenarFilas);
 
     const noEncontradosConsumo = conjuntoNoEncontrados(mapaConsumo, maestroSet);
     const noEncontradosStock = conjuntoNoEncontrados(datosStock.mapa, maestroSet);

@@ -176,9 +176,13 @@
     const fragmento = document.createDocumentFragment();
     for (const fila of informe.filas) {
       const tr = document.createElement("tr");
-      tr.className = fila.clase === "sin-consumo"
-        ? "fila-sin-consumo"
-        : `fila-cobertura-${fila.clase}`;
+      const clasesFila = [
+        fila.clase === "sin-consumo"
+          ? "fila-sin-consumo"
+          : `fila-cobertura-${fila.clase}`,
+      ];
+      if (!fila.imprimir) clasesFila.push("no-imprimir");
+      tr.className = clasesFila.join(" ");
 
       tr.append(
         crearCelda(fila.producto),
@@ -203,14 +207,39 @@
 
     const ahora = new Date();
     const fecha = new Intl.DateTimeFormat("es-CL", { dateStyle: "long", timeStyle: "short" }).format(ahora);
+    const periodoTexto = formatearPeriodoConsumo(datosConsumo.periodo, ahora);
     document.getElementById("metadatosInforme").textContent = [
       `Generado: ${fecha}`,
-      `Consumo: ${estado.archivoConsumo.name} (${datosConsumo.hoja})`,
-      `Stock: ${estado.archivoStock.name} (${datosStock.hoja})`,
+      `Consumo considerado: ${periodoTexto}`,
     ].join(" · ");
 
     ui.resultado.classList.remove("oculto");
     ui.resultado.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function formatearPeriodoConsumo(periodo, fechaActual) {
+    if (!periodo?.inicio || !periodo?.fin) return "Periodo no identificado";
+
+    const hoy = new Date(
+      fechaActual.getFullYear(),
+      fechaActual.getMonth(),
+      fechaActual.getDate(),
+      12
+    );
+    const finOriginal = new Date(
+      periodo.fin.getFullYear(),
+      periodo.fin.getMonth(),
+      periodo.fin.getDate(),
+      12
+    );
+    const finMostrado = finOriginal > hoy ? hoy : finOriginal;
+    const formato = new Intl.DateTimeFormat("es-CL", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+    return `${formato.format(periodo.inicio)} - ${formato.format(finMostrado)}`;
   }
 
   function crearCelda(texto, clase = "") {

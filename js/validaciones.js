@@ -19,14 +19,20 @@
 
   function validarPeriodoConsumo(datosConsumo) {
     const fechaEsperada = ayer();
-    const contieneAyer = datosConsumo.fechas.some((fecha) => mismaFecha(fecha, fechaEsperada));
-    const primeraFecha = datosConsumo.fechas[0] || null;
-    const ultimaFecha = datosConsumo.fechas.length ? datosConsumo.fechas[datosConsumo.fechas.length - 1] : null;
-    const ayerDentroDelRango = primeraFecha && ultimaFecha
-      ? fechaEsperada >= primeraFecha && fechaEsperada <= ultimaFecha
-      : false;
+    const finPeriodo = datosConsumo.periodo?.fin || null;
 
-    if (contieneAyer || ayerDentroDelRango) return { valido: true, advertencia: null };
+    if (!finPeriodo) {
+      return {
+        valido: true,
+        advertencia: "No fue posible identificar el periodo de consumo en el archivo.",
+      };
+    }
+
+    // Solo se advierte cuando el archivo termina antes del día anterior.
+    // Si termina ayer, hoy o en una fecha futura, el periodo es aceptado.
+    if (soloFecha(finPeriodo) >= fechaEsperada) {
+      return { valido: true, advertencia: null };
+    }
 
     return {
       valido: true,

@@ -156,6 +156,41 @@
     return productos;
   }
 
+  function obtenerFechasDeValor(valor) {
+    const fechas = [];
+    if (valor instanceof Date && !Number.isNaN(valor.getTime())) {
+      fechas.push(new Date(valor.getFullYear(), valor.getMonth(), valor.getDate(), 12));
+    }
+    if (typeof valor === "string") {
+      extraerFechasDeTexto(valor).forEach((fecha) => fechas.push(fecha));
+    }
+    return fechas;
+  }
+
+  function detectarPeriodoConsumo(filas, filaLimite) {
+    const limite = Math.min(filas.length, Math.max(0, filaLimite));
+
+    for (let i = 0; i < limite; i += 1) {
+      const fila = filas[i] || [];
+      const indiceFecha = fila.findIndex((valor) =>
+        normalizarEncabezado(valor).replace(/:$/, "") === "fecha"
+      );
+      if (indiceFecha < 0) continue;
+
+      const fechas = [];
+      for (let j = indiceFecha; j < fila.length; j += 1) {
+        obtenerFechasDeValor(fila[j]).forEach((fecha) => fechas.push(fecha));
+      }
+
+      fechas.sort((a, b) => a - b);
+      if (fechas.length >= 2) {
+        return { inicio: fechas[0], fin: fechas[fechas.length - 1] };
+      }
+    }
+
+    return null;
+  }
+
   function leerConsumo(libro) {
     const hojas = hojasComoMatrices(libro);
     let estructura = null;
@@ -175,6 +210,13 @@
     const mapa = new Map();
     const bodegasColumna = new Set();
     const { filas, encabezado } = estructura;
+    const periodoDetectado = detectarPeriodoConsumo(filas, encabezado.fila);
+    const fechasGenerales = extraerFechas(libro);
+    const periodo = periodoDetectado || (
+      fechasGenerales.length >= 2
+        ? { inicio: fechasGenerales[0], fin: fechasGenerales[fechasGenerales.length - 1] }
+        : null
+    );
 
     for (let i = encabezado.fila + 1; i < filas.length; i += 1) {
       const fila = filas[i] || [];
@@ -193,7 +235,8 @@
       encabezado,
       bodegasColumna,
       textos: extraerTextos(libro),
-      fechas: extraerFechas(libro),
+      fechas: fechasGenerales,
+      periodo,
     };
   }
 

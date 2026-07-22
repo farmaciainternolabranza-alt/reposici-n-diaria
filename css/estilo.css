@@ -573,3 +573,10 @@ td:not(:first-child) {
     font-size: 6.5pt;
   }
 }
+
+/* Productos sobre 199% se muestran en pantalla, pero se excluyen al imprimir. */
+@media print {
+  #tablaInforme tbody tr.no-imprimir {
+    display: none !important;
+  }
+}
