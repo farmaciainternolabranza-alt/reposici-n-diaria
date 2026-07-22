@@ -38,7 +38,7 @@
       const stockFarmacia = stock?.stockFarmacia || 0;
       const stockBodega = stock?.stockBodega || 0;
       const stockInstitucional = stock?.stockInstitucional || 0;
-      const indiceCobertura = consumo > 0 ? stockInstitucional / consumo : null;
+      const indiceCobertura = consumo > 0 ? stockFarmacia / consumo : null;
 
       // Reposición interna: completar en Farmacia un periodo de consumo,
       // sin proponer más unidades que las disponibles en Bodega.
