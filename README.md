@@ -1,4 +1,4 @@
-# Informe de Cobertura — Farmacia CESFAM Labranza
+# Informe de Cobertura — Farmacia
 
 Aplicación web interna para generar un informe de cobertura y reposición de medicamentos a partir de archivos Excel exportados desde Rayen.
 
