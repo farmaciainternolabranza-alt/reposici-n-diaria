@@ -46,11 +46,49 @@
     return Number.isFinite(numero) ? numero : 0;
   }
 
+  function textoPlanoDesdeContenido(contenido) {
+    return String(contenido || "")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;|&#160;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/\u00a0/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function extraerPeriodoDesdeContenido(contenido) {
+    const texto = textoPlanoDesdeContenido(contenido);
+    const coincidencia = texto.match(
+      /(?:^|\s)FECHA\s*:?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})\s*[-–—]\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i
+    );
+    if (!coincidencia) return null;
+
+    const inicio = extraerFechasDeTexto(coincidencia[1])[0] || null;
+    const fin = extraerFechasDeTexto(coincidencia[2])[0] || null;
+    return inicio && fin ? { inicio, fin } : null;
+  }
+
   async function leerArchivoExcel(archivo) {
     asegurarSheetJS();
     if (!archivo) throw new Error("No se seleccionó un archivo.");
     const buffer = await archivo.arrayBuffer();
-    return XLSX.read(buffer, { type: "array", cellDates: true, raw: true });
+
+    // Rayen entrega algunos archivos .xls que en realidad son documentos HTML.
+    // SheetJS lee correctamente la tabla, pero omite los textos anteriores a ella,
+    // donde viene el periodo: FECHA : dd/mm/aaaa - dd/mm/aaaa.
+    let contenidoFuente = "";
+    try {
+      contenidoFuente = new TextDecoder("utf-8").decode(buffer);
+    } catch (_error) {
+      contenidoFuente = "";
+    }
+
+    const libro = XLSX.read(buffer, { type: "array", cellDates: true, raw: true });
+    const periodoFuente = extraerPeriodoDesdeContenido(contenidoFuente);
+    if (periodoFuente) libro.__periodoConsumoRayen = periodoFuente;
+    return libro;
   }
 
   async function leerExcelDesdeRuta(ruta) {
@@ -212,7 +250,7 @@
     const { filas, encabezado } = estructura;
     const periodoDetectado = detectarPeriodoConsumo(filas, encabezado.fila);
     const fechasGenerales = extraerFechas(libro);
-    const periodo = periodoDetectado || (
+    const periodo = libro.__periodoConsumoRayen || periodoDetectado || (
       fechasGenerales.length >= 2
         ? { inicio: fechasGenerales[0], fin: fechasGenerales[fechasGenerales.length - 1] }
         : null
