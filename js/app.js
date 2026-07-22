@@ -27,6 +27,8 @@
 
     ui.archivoConsumo.addEventListener("change", seleccionarConsumo);
     ui.archivoStock.addEventListener("change", seleccionarStock);
+    configurarArrastre(ui.archivoConsumo, "consumo");
+    configurarArrastre(ui.archivoStock, "stock");
     ui.botonGenerar.addEventListener("click", generarInforme);
     ui.botonLimpiar.addEventListener("click", limpiarTodo);
     ui.botonImprimir.addEventListener("click", () => window.print());
@@ -63,6 +65,60 @@
   function seleccionarStock(evento) {
     estado.archivoStock = evento.target.files?.[0] || null;
     actualizarSelector(ui.archivoStock, ui.nombreStock, estado.archivoStock, "Seleccionar Stock.xls");
+    actualizarBotonGenerar();
+  }
+
+  function configurarArrastre(input, tipo) {
+    const zona = input.closest(".selector-archivo");
+    if (!zona) return;
+
+    ["dragenter", "dragover"].forEach((nombreEvento) => {
+      zona.addEventListener(nombreEvento, (evento) => {
+        evento.preventDefault();
+        evento.stopPropagation();
+        zona.classList.add("archivo-arrastrado");
+        if (evento.dataTransfer) evento.dataTransfer.dropEffect = "copy";
+      });
+    });
+
+    ["dragleave", "drop"].forEach((nombreEvento) => {
+      zona.addEventListener(nombreEvento, (evento) => {
+        evento.preventDefault();
+        evento.stopPropagation();
+        zona.classList.remove("archivo-arrastrado");
+      });
+    });
+
+    zona.addEventListener("drop", (evento) => {
+      const archivos = Array.from(evento.dataTransfer?.files || []);
+      const archivo = archivos[0] || null;
+      recibirArchivoArrastrado(tipo, input, archivo, archivos.length);
+    });
+  }
+
+  function recibirArchivoArrastrado(tipo, input, archivo, cantidadArchivos) {
+    limpiarMensajes();
+
+    if (!archivo) return;
+
+    if (cantidadArchivos > 1) {
+      mostrarMensajes(["Arrastre un solo archivo en cada cuadro de carga."], "error");
+      return;
+    }
+
+    if (!/\.xlsx?$/i.test(archivo.name)) {
+      mostrarMensajes(["El archivo debe estar en formato .xls o .xlsx."], "error");
+      return;
+    }
+
+    if (tipo === "consumo") {
+      estado.archivoConsumo = archivo;
+      actualizarSelector(input, ui.nombreConsumo, archivo, "Seleccionar Consumo.xls");
+    } else {
+      estado.archivoStock = archivo;
+      actualizarSelector(input, ui.nombreStock, archivo, "Seleccionar Stock.xls");
+    }
+
     actualizarBotonGenerar();
   }
 
