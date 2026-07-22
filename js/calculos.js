@@ -6,6 +6,9 @@
     amarilloHasta: 1,
   });
 
+  // El informe impreso muestra coberturas de hasta 199%.
+  const MAXIMO_COBERTURA_INFORME = 1.99;
+
   function redondear(valor, decimales = 2) {
     const factor = 10 ** decimales;
     return Math.round((valor + Number.EPSILON) * factor) / factor;
@@ -28,11 +31,50 @@
     return "verde";
   }
 
+  function esPrioridadBodega(fila) {
+    return fila.stockFarmacia === 0 && fila.stockBodega > 0;
+  }
+
+  function incluirEnInforme(fila) {
+    // Este caso siempre debe aparecer, incluso cuando no se pueda calcular %
+    // por no existir consumo durante el periodo.
+    if (esPrioridadBodega(fila)) return true;
+
+    // Los demás productos solo se ofrecen hasta 199% de cobertura.
+    return fila.indiceCobertura !== null &&
+      fila.indiceCobertura <= MAXIMO_COBERTURA_INFORME;
+  }
+
+  function ordenarFilas(a, b) {
+    const prioridadA = esPrioridadBodega(a);
+    const prioridadB = esPrioridadBodega(b);
+
+    // Primero: stock Farmacia = 0 y stock Bodega > 0.
+    if (prioridadA !== prioridadB) return prioridadA ? -1 : 1;
+
+    // Dentro del grupo prioritario, mostrar primero los que sí tienen consumo,
+    // ordenados por menor cobertura; los que no tienen % quedan después.
+    if (a.indiceCobertura === null && b.indiceCobertura !== null) return 1;
+    if (a.indiceCobertura !== null && b.indiceCobertura === null) return -1;
+
+    if (
+      a.indiceCobertura !== null &&
+      b.indiceCobertura !== null &&
+      a.indiceCobertura !== b.indiceCobertura
+    ) {
+      return a.indiceCobertura - b.indiceCobertura;
+    }
+
+    return a.producto.localeCompare(b.producto, "es", {
+      sensitivity: "base",
+    });
+  }
+
   function crearInforme(maestro, mapaConsumo, datosStock) {
     const maestroSet = new Set(maestro);
     const clavesStock = unirClavesStock(datosStock);
 
-    const filas = maestro.map((producto) => {
+    const todasLasFilas = maestro.map((producto) => {
       const consumo = mapaConsumo.get(producto) || 0;
       const stock = datosStock.mapa.get(producto);
       const stockFarmacia = stock?.stockFarmacia || 0;
@@ -40,34 +82,25 @@
       const stockInstitucional = stock?.stockInstitucional || 0;
       const indiceCobertura = consumo > 0 ? stockFarmacia / consumo : null;
 
-      // Reposición interna: completar en Farmacia un periodo de consumo,
-      // sin proponer más unidades que las disponibles en Bodega.
-      const necesidadFarmacia = Math.max(0, consumo - stockFarmacia);
-      const cantidadReponer = Math.min(stockBodega, necesidadFarmacia);
-
       return {
         producto,
         consumo: redondear(consumo, 2),
         stockFarmacia: redondear(stockFarmacia, 2),
         stockBodega: redondear(stockBodega, 2),
         stockInstitucional: redondear(stockInstitucional, 2),
-        indiceCobertura: indiceCobertura === null ? null : redondear(indiceCobertura, 2),
-        cantidadReponer: redondear(cantidadReponer, 2),
+        indiceCobertura:
+          indiceCobertura === null ? null : redondear(indiceCobertura, 4),
+        // Se conserva vacío para completarlo manualmente en la impresión.
+        cantidadReponer: "",
         clase: claseCobertura(indiceCobertura, consumo),
         presenteConsumo: mapaConsumo.has(producto),
         presenteStock: clavesStock.has(producto),
       };
     });
 
-    filas.sort((a, b) => {
-      if (a.indiceCobertura === null && b.indiceCobertura === null) {
-        return a.producto.localeCompare(b.producto, "es", { sensitivity: "base" });
-      }
-      if (a.indiceCobertura === null) return 1;
-      if (b.indiceCobertura === null) return -1;
-      if (a.indiceCobertura !== b.indiceCobertura) return a.indiceCobertura - b.indiceCobertura;
-      return a.producto.localeCompare(b.producto, "es", { sensitivity: "base" });
-    });
+    // Las filas ofrecidas en el informe cumplen el límite de 199%, salvo la
+    // prioridad especial de Farmacia sin stock y Bodega con disponibilidad.
+    const filas = todasLasFilas.filter(incluirEnInforme).sort(ordenarFilas);
 
     const noEncontradosConsumo = conjuntoNoEncontrados(mapaConsumo, maestroSet);
     const noEncontradosStock = conjuntoNoEncontrados(datosStock.mapa, maestroSet);
@@ -76,10 +109,17 @@
       filas,
       noEncontradosConsumo,
       noEncontradosStock,
-      coincidencias: filas.filter((fila) => fila.presenteConsumo || fila.presenteStock).length,
+      coincidencias: todasLasFilas.filter(
+        (fila) => fila.presenteConsumo || fila.presenteStock
+      ).length,
       umbrales: UMBRALES_COBERTURA,
+      maximoCoberturaInforme: MAXIMO_COBERTURA_INFORME,
     };
   }
 
-  global.Calculos = Object.freeze({ crearInforme, UMBRALES_COBERTURA });
+  global.Calculos = Object.freeze({
+    crearInforme,
+    UMBRALES_COBERTURA,
+    MAXIMO_COBERTURA_INFORME,
+  });
 })(window);
