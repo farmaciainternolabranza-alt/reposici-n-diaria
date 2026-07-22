@@ -185,9 +185,8 @@
         crearCelda(formatearCantidad(fila.consumo)),
         crearCelda(formatearCantidad(fila.stockFarmacia)),
         crearCelda(formatearCantidad(fila.stockBodega)),
-        crearCelda(formatearCantidad(fila.stockInstitucional)),
-        crearCelda(fila.indiceCobertura === null ? "—" : formatearDecimal(fila.indiceCobertura), "indice"),
-        crearCelda(formatearCantidad(fila.cantidadReponer)),
+        crearCelda(fila.indiceCobertura === null ? "—" : formatearPorcentaje(fila.indiceCobertura), "indice"),
+        crearCelda("", "cantidad-reponer"),
       );
       fragmento.appendChild(tr);
     }
@@ -225,8 +224,8 @@
     return new Intl.NumberFormat("es-CL", { maximumFractionDigits: 2 }).format(valor);
   }
 
-  function formatearDecimal(valor) {
-    return new Intl.NumberFormat("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valor);
+  function formatearPorcentaje(valor) {
+    return `${new Intl.NumberFormat("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(valor * 100)}%`;
   }
 
   function renderizarLista(id, productos) {

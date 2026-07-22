@@ -411,6 +411,12 @@ td:not(:first-child) {
 .fila-cobertura-verde td.indice { background: var(--verde-100); color: var(--verde-700); font-weight: 850; }
 .fila-sin-consumo td.indice { background: var(--gris-100); color: var(--gris-500); }
 
+.cantidad-reponer {
+  min-width: 92px;
+  height: 34px;
+  background: var(--blanco);
+}
+
 .rejilla-diagnostico {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -467,8 +473,8 @@ td:not(:first-child) {
 }
 
 @page {
-  size: A4 portrait;
-  margin: 10mm 7mm 10mm;
+  size: letter portrait;
+  margin: 5mm;
 }
 
 @media print {
@@ -540,17 +546,27 @@ td:not(:first-child) {
     font-size: 6pt;
   }
 
-  td:first-child {
-    width: 38%;
+  th:nth-child(1), td:nth-child(1) {
+    width: 42%;
     min-width: 0;
     overflow-wrap: anywhere;
   }
 
-  th:nth-child(n+2), td:nth-child(n+2) { width: 10.33%; }
+  th:nth-child(2), td:nth-child(2),
+  th:nth-child(3), td:nth-child(3),
+  th:nth-child(4), td:nth-child(4) { width: 11%; }
+
+  th:nth-child(5), td:nth-child(5) { width: 10%; }
+  th:nth-child(6), td:nth-child(6) { width: 15%; }
 
   .fila-cobertura-roja td.indice { background: #f5caca !important; }
   .fila-cobertura-amarilla td.indice { background: #f6e4a7 !important; }
   .fila-cobertura-verde td.indice { background: #cce7d6 !important; }
+
+  td.cantidad-reponer {
+    height: 7mm;
+    background: #fff !important;
+  }
 
   .pie-informe {
     margin-top: 3mm;
