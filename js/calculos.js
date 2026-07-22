@@ -18,7 +18,7 @@
   }
 
   function unirClavesStock(datosStock) {
-    return new Set([...datosStock.farmacia.keys(), ...datosStock.bodega.keys()]);
+    return new Set(datosStock.mapa.keys());
   }
 
   function claseCobertura(indice, consumo) {
@@ -34,9 +34,10 @@
 
     const filas = maestro.map((producto) => {
       const consumo = mapaConsumo.get(producto) || 0;
-      const stockFarmacia = datosStock.farmacia.get(producto) || 0;
-      const stockBodega = datosStock.bodega.get(producto) || 0;
-      const stockInstitucional = stockFarmacia + stockBodega;
+      const stock = datosStock.mapa.get(producto);
+      const stockFarmacia = stock?.stockFarmacia || 0;
+      const stockBodega = stock?.stockBodega || 0;
+      const stockInstitucional = stock?.stockInstitucional || 0;
       const indiceCobertura = consumo > 0 ? stockInstitucional / consumo : null;
 
       // Reposición interna: completar en Farmacia un periodo de consumo,
@@ -69,8 +70,7 @@
     });
 
     const noEncontradosConsumo = conjuntoNoEncontrados(mapaConsumo, maestroSet);
-    const mapaStockUnificado = new Map([...datosStock.farmacia, ...datosStock.bodega]);
-    const noEncontradosStock = conjuntoNoEncontrados(mapaStockUnificado, maestroSet);
+    const noEncontradosStock = conjuntoNoEncontrados(datosStock.mapa, maestroSet);
 
     return {
       filas,

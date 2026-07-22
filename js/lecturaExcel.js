@@ -4,7 +4,8 @@
   const ALIAS = Object.freeze({
     producto: ["articulo", "artículo", "producto", "descripcion", "descripción", "nombre articulo", "nombre artículo"],
     consumo: ["consumo", "cantidad", "cantidad consumo", "consumo periodo", "consumo período", "egreso", "salida", "unidades"],
-    stock: ["stock", "saldo", "existencia", "existencias", "cantidad", "stock actual"],
+    totalEnBodega: ["total en bodega"],
+    stockInstitucional: ["stock institucional"],
     bodega: ["bodega"],
   });
 
@@ -105,9 +106,17 @@
       if (primera !== "bodega") continue;
 
       const producto = buscarIndiceAlias(fila, ALIAS.producto);
-      const stock = buscarIndiceAlias(fila, ALIAS.stock);
-      if (producto >= 0 && stock >= 0 && producto !== stock) {
-        return { fila: i, bodega: 0, producto, stock };
+      const totalEnBodega = buscarIndiceAlias(fila, ALIAS.totalEnBodega);
+      const stockInstitucional = buscarIndiceAlias(fila, ALIAS.stockInstitucional);
+
+      if (producto >= 0 && totalEnBodega >= 0 && stockInstitucional >= 0) {
+        return {
+          fila: i,
+          bodega: 0,
+          producto,
+          totalEnBodega,
+          stockInstitucional,
+        };
       }
     }
     return null;
@@ -201,12 +210,10 @@
     }
 
     if (!estructura) {
-      throw new Error('No se encontró una tabla de Stock cuya primera columna sea "Bodega" y que contenga artículo y stock.');
+      throw new Error('No se encontró una tabla de Stock con las columnas "Bodega", "Artículo", "Total en Bodega" y "Stock Institucional".');
     }
 
-    const farmacia = new Map();
-    const bodega = new Map();
-    const otrasBodegas = new Map();
+    const mapa = new Map();
     const bodegasEncontradas = new Set();
     const { filas, encabezado } = estructura;
 
@@ -216,23 +223,22 @@
       const producto = normalizarEspacios(fila[encabezado.producto]);
       if (!nombreBodega || !producto) continue;
 
-      const cantidad = numeroSeguro(fila[encabezado.stock]);
       bodegasEncontradas.add(nombreBodega);
+      if (!(nombreBodega === "farmacia" || nombreBodega.includes("farmacia"))) continue;
 
-      if (nombreBodega === "farmacia" || nombreBodega.includes("farmacia")) {
-        sumarMapa(farmacia, producto, cantidad);
-      } else if (nombreBodega === "bodega" || nombreBodega.includes("bodega")) {
-        sumarMapa(bodega, producto, cantidad);
-      } else {
-        if (!otrasBodegas.has(nombreBodega)) otrasBodegas.set(nombreBodega, new Map());
-        sumarMapa(otrasBodegas.get(nombreBodega), producto, cantidad);
-      }
+      const stockFarmacia = numeroSeguro(fila[encabezado.totalEnBodega]);
+      const stockInstitucional = numeroSeguro(fila[encabezado.stockInstitucional]);
+      const stockBodega = Math.max(0, stockInstitucional - stockFarmacia);
+
+      mapa.set(producto, {
+        stockFarmacia,
+        stockBodega,
+        stockInstitucional,
+      });
     }
 
     return {
-      farmacia,
-      bodega,
-      otrasBodegas,
+      mapa,
       bodegasEncontradas,
       hoja: estructura.nombre,
       encabezado,
