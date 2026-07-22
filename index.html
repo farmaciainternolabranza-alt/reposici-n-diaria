@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Informe local de cobertura y reposición de medicamentos para Farmacia CESFAM Labranza.">
+  <title>Informe de Cobertura | Farmacia CESFAM Labranza</title>
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+  <header class="encabezado-app no-imprimir">
+    <div class="encabezado-contenido">
+      <div class="marca">
+        <div class="marca-icono" aria-hidden="true">Rx</div>
+        <div>
+          <p class="sobrelinea">Farmacia CESFAM Labranza</p>
+          <h1>Informe de cobertura y reposición</h1>
+          <p class="subtitulo">Procesamiento local de archivos Rayen. Los archivos seleccionados no se envían a internet.</p>
+        </div>
+      </div>
+      <div id="estadoMaestro" class="estado estado-cargando" role="status" aria-live="polite">
+        Cargando maestro de productos…
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <section class="panel-carga no-imprimir" aria-labelledby="tituloCarga">
+      <div class="titulo-seccion">
+        <span class="paso">1</span>
+        <div>
+          <h2 id="tituloCarga">Seleccionar archivos Rayen</h2>
+          <p>Cargue únicamente los archivos de Consumo y Stock correspondientes a Farmacia.</p>
+        </div>
+      </div>
+
+      <div class="rejilla-archivos">
+        <label class="selector-archivo" for="archivoConsumo">
+          <span class="selector-etiqueta">Consumo</span>
+          <strong id="nombreConsumo">Seleccionar Consumo.xls</strong>
+          <span>Formato .xls o .xlsx</span>
+          <input id="archivoConsumo" type="file" accept=".xls,.xlsx" aria-describedby="ayudaConsumo">
+          <small id="ayudaConsumo">Debe corresponder a la bodega Farmacia y contener el periodo de consumo.</small>
+        </label>
+
+        <label class="selector-archivo" for="archivoStock">
+          <span class="selector-etiqueta">Stock</span>
+          <strong id="nombreStock">Seleccionar Stock.xls</strong>
+          <span>Formato .xls o .xlsx</span>
+          <input id="archivoStock" type="file" accept=".xls,.xlsx" aria-describedby="ayudaStock">
+          <small id="ayudaStock">La primera columna debe ser Bodega e incluir el registro farmacia.</small>
+        </label>
+      </div>
+
+      <div class="acciones-carga">
+        <button id="botonGenerar" class="boton boton-primario" type="button" disabled>
+          Generar informe
+        </button>
+        <button id="botonLimpiar" class="boton boton-secundario" type="button">
+          Limpiar
+        </button>
+      </div>
+
+      <div id="mensajes" class="mensajes" aria-live="assertive"></div>
+    </section>
+
+    <section id="resultado" class="resultado oculto" aria-labelledby="tituloInforme">
+      <div class="cabecera-informe">
+        <div>
+          <p class="sobrelinea">Farmacia CESFAM Labranza</p>
+          <h2 id="tituloInforme">Informe de cobertura y reposición</h2>
+          <p id="metadatosInforme" class="metadatos"></p>
+        </div>
+        <button id="botonImprimir" class="boton boton-primario no-imprimir" type="button">Imprimir informe</button>
+      </div>
+
+      <div id="advertenciasInforme" class="advertencias-informe"></div>
+
+      <div class="resumen-indicadores">
+        <article>
+          <span>Productos del maestro</span>
+          <strong id="totalMaestro">0</strong>
+        </article>
+        <article>
+          <span>Coincidencias</span>
+          <strong id="totalCoincidencias">0</strong>
+        </article>
+        <article>
+          <span>Consumo no encontrado</span>
+          <strong id="totalNoConsumo">0</strong>
+        </article>
+        <article>
+          <span>Stock no encontrado</span>
+          <strong id="totalNoStock">0</strong>
+        </article>
+      </div>
+
+      <section class="bloque-tabla" aria-labelledby="tituloTabla">
+        <div class="encabezado-bloque">
+          <div>
+            <h3 id="tituloTabla">Productos encontrados correctamente</h3>
+            <p>Ordenados desde el menor índice de cobertura. Los productos sin consumo aparecen al final.</p>
+          </div>
+          <div class="leyenda no-imprimir" aria-label="Leyenda de cobertura">
+            <span><i class="punto rojo"></i> Menor a 0,5 periodos</span>
+            <span><i class="punto amarillo"></i> 0,5 a menos de 1 periodo</span>
+            <span><i class="punto verde"></i> 1 periodo o más</span>
+          </div>
+        </div>
+
+        <div class="envoltorio-tabla">
+          <table id="tablaInforme">
+            <thead>
+              <tr>
+                <th scope="col">Producto</th>
+                <th scope="col">Consumo<br>periodo</th>
+                <th scope="col">Stock<br>farmacia</th>
+                <th scope="col">Stock<br>bodega</th>
+                <th scope="col">Stock<br>institucional</th>
+                <th scope="col">Índice<br>cobertura</th>
+                <th scope="col">Cantidad<br>a reponer</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="diagnostico-nombres" aria-labelledby="tituloDiagnostico">
+        <div class="encabezado-bloque">
+          <div>
+            <h3 id="tituloDiagnostico">Diagnóstico de nombres</h3>
+            <p>Estas listas ayudan a detectar diferencias exactas entre Rayen y el maestro.</p>
+          </div>
+        </div>
+
+        <div class="rejilla-diagnostico">
+          <article>
+            <h4>Presentes en Consumo pero no en Maestro</h4>
+            <ul id="listaNoConsumo" class="lista-productos"></ul>
+          </article>
+          <article>
+            <h4>Presentes en Stock pero no en Maestro</h4>
+            <ul id="listaNoStock" class="lista-productos"></ul>
+          </article>
+        </div>
+      </section>
+
+      <footer class="pie-informe">
+        <p>Generado localmente en el navegador. Maestro: <code>datos/Maestro_Productos.xlsx</code>.</p>
+      </footer>
+    </section>
+  </main>
+
+  <noscript>
+    <div class="aviso-noscript">Esta aplicación requiere JavaScript habilitado.</div>
+  </noscript>
+
+  <!-- SheetJS se utiliza solo para leer los archivos en el navegador. Los archivos no se cargan a ningún servidor. -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/lecturaExcel.js"></script>
+  <script src="js/validaciones.js"></script>
+  <script src="js/calculos.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
